@@ -2,6 +2,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@mui/material";
 import { useMap } from "../hooks/useMap";
 import { pointsToGeoJSON } from "../utils";
+// https://mui.com/material-ui/material-icons/
+import AddCircleIcon from "@mui/icons-material/AddCircle";
 import "./MapView.css";
 
 const ADDED_POINTS_SOURCE_ID = "added-points";
@@ -32,8 +34,10 @@ export function MapView() {
       type: "circle",
       source: ADDED_POINTS_SOURCE_ID,
       paint: {
-        "circle-radius": 5,
+        "circle-radius": 8,
         "circle-color": "#1976d2",
+        "circle-stroke-width": 2,
+        "circle-stroke-color": "#fff",
       },
     });
   }, [map, mapReady]);
@@ -65,15 +69,16 @@ export function MapView() {
     >
       <div ref={containerRef} className="map-view" aria-label="map" />
       <Button
-        variant="contained"
-        color={addMode ? "primary" : "inherit"}
+        variant={addMode ? "contained" : "outlined"}
+        color={addMode ? "primary" : "secondary"}
         onClick={toggleAddMode}
         sx={{
           position: "absolute",
-          bottom: 24,
+          top: 24,
           right: 24,
           zIndex: 1000,
         }}
+        startIcon={addMode && <AddCircleIcon />}
       >
         {addMode ? "追加モードON" : "追加モードOFF"}
       </Button>
