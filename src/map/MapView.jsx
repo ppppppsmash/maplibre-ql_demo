@@ -1,10 +1,18 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Box, Button } from "@mui/material";
+import {
+  Box,
+  IconButton,
+  ListItemIcon,
+  ListItemText,
+  Menu,
+  MenuItem,
+} from "@mui/material";
 import { useMap } from "../hooks/useMap";
 import { pointsToGeoJSON } from "../utils";
 // https://mui.com/material-ui/material-icons/
 import AddCircleIcon from "@mui/icons-material/AddCircle";
 import DeleteSweepIcon from "@mui/icons-material/DeleteSweep";
+import MenuIcon from "@mui/icons-material/Menu";
 import "./MapView.css";
 
 const ADDED_POINTS_SOURCE_ID = "added-points";
@@ -17,6 +25,8 @@ export function MapView() {
   const [addMode, setAddMode] = useState(false);
   const [deleteMode, setDeleteMode] = useState(false);
   const [points, setPoints] = useState([]);
+  const [menuAnchor, setMenuAnchor] = useState(null);
+  const menuOpen = Boolean(menuAnchor);
 
   // 追加ポイント用
   useEffect(() => {
@@ -78,19 +88,33 @@ export function MapView() {
     return () => map.off("click", ADDED_POINTS_LAYER_ID, handler);
   }, [map, deleteMode]);
 
-  const toggleAddMode = useCallback(() => {
-    setAddMode((prev) => !prev);
-    setDeleteMode(false);
-  }, []);
+  const openMenu = useCallback((e) => setMenuAnchor(e.currentTarget), []);
+  const closeMenu = useCallback(() => setMenuAnchor(null), []);
 
-  const toggleDeleteMode = useCallback(() => {
-    setDeleteMode((prev) => !prev);
+  const handleAddMode = useCallback(() => {
+    setAddMode(true);
+    setDeleteMode(false);
+    closeMenu();
+  }, [closeMenu]);
+
+  const handleDeleteMode = useCallback(() => {
+    setDeleteMode(true);
     setAddMode(false);
-  }, []);
+    closeMenu();
+  }, [closeMenu]);
+
+  const handleClearMode = useCallback(() => {
+    setAddMode(false);
+    setDeleteMode(false);
+    closeMenu();
+  }, [closeMenu]);
+
+  const mapCursor = addMode ? "crosshair" : deleteMode ? "pointer" : undefined;
 
   return (
     <div
       className="map-view-wrapper"
+      style={{ cursor: mapCursor }}
     >
       <div ref={containerRef} className="map-view" aria-label="map" />
       <Box
@@ -99,41 +123,56 @@ export function MapView() {
           top: 24,
           right: 24,
           zIndex: 1000,
-          display: "flex",
-          flexDirection: "column",
-          gap: 1,
         }}
       >
-        <Button
-          className="shimmer-button"
-          variant={addMode ? "contained" : "outlined"}
-          color={addMode ? "primary" : "secondary"}
-          onClick={toggleAddMode}
+        <IconButton
+          aria-label="popover menu"
+          aria-controls={menuOpen ? "map-actions-menu" : undefined}
+          aria-haspopup="true"
+          aria-expanded={menuOpen ? "true" : undefined}
+          onClick={openMenu}
           sx={{
-            ...(!addMode && !deleteMode && {
-              backgroundColor: "rgba(255, 255, 255, .4)",
-              borderWidth: 2,
-            }),
+            backgroundColor: "rgba(255, 255, 255, 0.9)",
+            boxShadow: 1,
+            "&:hover": {
+              backgroundColor: "rgba(255, 255, 255, 1)",
+              boxShadow: 2,
+            },
+            // https://mui.com/material-ui/customization/palette/
+            ...(addMode && { color: "primary.main" }),
+            ...(deleteMode && { color: "error.main" }),
           }}
-          startIcon={addMode && <AddCircleIcon />}
         >
-          {addMode ? "追加モードON" : "追加モードOFF"}
-        </Button>
-        <Button
-          className="shimmer-button"
-          variant={deleteMode ? "contained" : "outlined"}
-          color={deleteMode ? "error" : "secondary"}
-          onClick={toggleDeleteMode}
-          sx={{
-            ...(!deleteMode && !addMode && {
-              backgroundColor: "rgba(255, 255, 255, .4)",
-              borderWidth: 2,
-            }),
-          }}
-          startIcon={deleteMode && <DeleteSweepIcon />}
+          <MenuIcon />
+        </IconButton>
+        {/* https://mui.com/material-ui/react-menu/ */}
+        <Menu
+          id="map-actions-menu"
+          anchorEl={menuAnchor}
+          open={menuOpen}
+          onClose={closeMenu}
+          anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+          transformOrigin={{ vertical: "top", horizontal: "right" }}
+          slotProps={{ paper: { sx: { minWidth: 200 } } }}
         >
-          {deleteMode ? "削除モードON" : "削除モードOFF"}
-        </Button>
+          <MenuItem onClick={handleAddMode} selected={addMode}>
+            <ListItemIcon>
+              <AddCircleIcon color={addMode ? "primary" : "inherit"} />
+            </ListItemIcon>
+            <ListItemText primary="ポイントを追加" />
+          </MenuItem>
+          <MenuItem onClick={handleDeleteMode} selected={deleteMode}>
+            <ListItemIcon>
+              <DeleteSweepIcon color={deleteMode ? "error" : "inherit"} />
+            </ListItemIcon>
+            <ListItemText primary="ポイントを削除" />
+          </MenuItem>
+          {(addMode || deleteMode) && (
+            <MenuItem onClick={handleClearMode}>
+              <ListItemText primary="モードを解除" />
+            </MenuItem>
+          )}
+        </Menu>
       </Box>
     </div>
   );
