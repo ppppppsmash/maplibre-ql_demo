@@ -69,6 +69,7 @@ export function MapView() {
     >
       <div ref={containerRef} className="map-view" aria-label="map" />
       <Button
+        className="shimmer-button"
         variant={addMode ? "contained" : "outlined"}
         color={addMode ? "primary" : "secondary"}
         onClick={toggleAddMode}
@@ -77,6 +78,12 @@ export function MapView() {
           top: 24,
           right: 24,
           zIndex: 1000,
+          // https://mui.com/system/getting-started/the-sx-prop/
+          // sxでspread syntacで
+          ...(!addMode && {
+            backgroundColor: "rgba(255, 255, 255, .4)",
+            borderWidth: 2,
+          }),
         }}
         startIcon={addMode && <AddCircleIcon />}
       >
