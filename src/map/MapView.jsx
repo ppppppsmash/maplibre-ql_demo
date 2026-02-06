@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Button } from "@mui/material";
+import { Box, Button } from "@mui/material";
 import { useMap } from "../hooks/useMap";
 import { pointsToGeoJSON } from "../utils";
 // https://mui.com/material-ui/material-icons/
 import AddCircleIcon from "@mui/icons-material/AddCircle";
+import DeleteSweepIcon from "@mui/icons-material/DeleteSweep";
 import "./MapView.css";
 
 const ADDED_POINTS_SOURCE_ID = "added-points";
@@ -14,6 +15,7 @@ export function MapView() {
   const { map, mapReady } = useMap({ containerRef });
 
   const [addMode, setAddMode] = useState(false);
+  const [deleteMode, setDeleteMode] = useState(false);
   const [points, setPoints] = useState([]);
 
   // 追加ポイント用
@@ -60,35 +62,79 @@ export function MapView() {
     return () => map.off("click", handler);
   }, [map, addMode]);
 
-  const toggleAddMode = useCallback(() => setAddMode((prev) => !prev), []);
+  // 削除モードON
+  useEffect(() => {
+    if (!map || !deleteMode) return;
+
+    const handler = (e) => {
+      const feature = e.features?.[0];
+      if (feature?.id === undefined) return;
+      const index = Number(feature.id);
+      if (Number.isNaN(index) || index < 0) return;
+      setPoints((prev) => prev.filter((_, i) => i !== index));
+    };
+
+    map.on("click", ADDED_POINTS_LAYER_ID, handler);
+    return () => map.off("click", ADDED_POINTS_LAYER_ID, handler);
+  }, [map, deleteMode]);
+
+  const toggleAddMode = useCallback(() => {
+    setAddMode((prev) => !prev);
+    setDeleteMode(false);
+  }, []);
+
+  const toggleDeleteMode = useCallback(() => {
+    setDeleteMode((prev) => !prev);
+    setAddMode(false);
+  }, []);
 
   return (
     <div
       className="map-view-wrapper"
-      style={{ cursor: addMode ? "crosshair" : undefined }}
     >
       <div ref={containerRef} className="map-view" aria-label="map" />
-      <Button
-        className="shimmer-button"
-        variant={addMode ? "contained" : "outlined"}
-        color={addMode ? "primary" : "secondary"}
-        onClick={toggleAddMode}
+      <Box
         sx={{
           position: "absolute",
           top: 24,
           right: 24,
           zIndex: 1000,
-          // https://mui.com/system/getting-started/the-sx-prop/
-          // sxでspread syntacで
-          ...(!addMode && {
-            backgroundColor: "rgba(255, 255, 255, .4)",
-            borderWidth: 2,
-          }),
+          display: "flex",
+          flexDirection: "column",
+          gap: 1,
         }}
-        startIcon={addMode && <AddCircleIcon />}
       >
-        {addMode ? "追加モードON" : "追加モードOFF"}
-      </Button>
+        <Button
+          className="shimmer-button"
+          variant={addMode ? "contained" : "outlined"}
+          color={addMode ? "primary" : "secondary"}
+          onClick={toggleAddMode}
+          sx={{
+            ...(!addMode && !deleteMode && {
+              backgroundColor: "rgba(255, 255, 255, .4)",
+              borderWidth: 2,
+            }),
+          }}
+          startIcon={addMode && <AddCircleIcon />}
+        >
+          {addMode ? "追加モードON" : "追加モードOFF"}
+        </Button>
+        <Button
+          className="shimmer-button"
+          variant={deleteMode ? "contained" : "outlined"}
+          color={deleteMode ? "error" : "secondary"}
+          onClick={toggleDeleteMode}
+          sx={{
+            ...(!deleteMode && !addMode && {
+              backgroundColor: "rgba(255, 255, 255, .4)",
+              borderWidth: 2,
+            }),
+          }}
+          startIcon={deleteMode && <DeleteSweepIcon />}
+        >
+          {deleteMode ? "削除モードON" : "削除モードOFF"}
+        </Button>
+      </Box>
     </div>
   );
 }
