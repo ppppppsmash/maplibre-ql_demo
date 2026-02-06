@@ -12,6 +12,7 @@ export function useMap(options = {}) {
 
   const mapRef = useRef(null);
   const [mapReady, setMapReady] = useState(false);
+  const [mapInstance, setMapInstance] = useState(null);
 
   useEffect(() => {
     const container = containerRef?.current;
@@ -26,15 +27,19 @@ export function useMap(options = {}) {
 
     mapRef.current = map;
 
-    map.on("load", () => setMapReady(true));
+    map.on("load", () => {
+      setMapReady(true);
+      setMapInstance(map);
+    });
 
     return () => {
       map.remove();
       mapRef.current = null;
+      setMapInstance(null);
       setMapReady(false);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  return { map: mapRef.current, mapReady };
+  return { map: mapInstance, mapReady };
 }
