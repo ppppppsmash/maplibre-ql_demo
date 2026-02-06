@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
-import { OSM_BASE_STYLE, DEFAULT_CENTER, DEFAULT_ZOOM } from "../config/mapConfig";
+import { OSM_BASE_STYLE, DEFAULT_CENTER, DEFAULT_ZOOM } from "../config";
 
 export function useMap(options = {}) {
   const {

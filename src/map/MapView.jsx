@@ -1,6 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Box,
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
   IconButton,
   ListItemIcon,
   ListItemText,
@@ -27,6 +33,7 @@ export function MapView() {
   const [points, setPoints] = useState([]);
   const [menuAnchor, setMenuAnchor] = useState(null);
   const menuOpen = Boolean(menuAnchor);
+  const [deleteConfirmIndex, setDeleteConfirmIndex] = useState(null);
 
   // 追加ポイント用
   useEffect(() => {
@@ -81,7 +88,7 @@ export function MapView() {
       if (feature?.id === undefined) return;
       const index = Number(feature.id);
       if (Number.isNaN(index) || index < 0) return;
-      setPoints((prev) => prev.filter((_, i) => i !== index));
+      setDeleteConfirmIndex(index);
     };
 
     map.on("click", ADDED_POINTS_LAYER_ID, handler);
@@ -108,6 +115,16 @@ export function MapView() {
     setDeleteMode(false);
     closeMenu();
   }, [closeMenu]);
+
+  const handleDeleteConfirm = useCallback(() => {
+    if (deleteConfirmIndex === null) return;
+    setPoints((prev) => prev.filter((_, i) => i !== deleteConfirmIndex));
+    setDeleteConfirmIndex(null);
+  }, [deleteConfirmIndex]);
+
+  const handleDeleteCancel = useCallback(() => {
+    setDeleteConfirmIndex(null);
+  }, []);
 
   const mapCursor = addMode ? "crosshair" : deleteMode ? "pointer" : undefined;
 
@@ -174,6 +191,28 @@ export function MapView() {
           )}
         </Menu>
       </Box>
+
+      <Dialog
+        open={deleteConfirmIndex !== null}
+        onClose={handleDeleteCancel}
+        aria-labelledby="delete-dialog-title"
+        aria-describedby="delete-dialog-description"
+      >
+        <DialogTitle id="delete-dialog-title">ポイントの削除</DialogTitle>
+        <DialogContent>
+          <DialogContentText id="delete-dialog-description">
+            このポイントを削除しますか？
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleDeleteCancel} autoFocus>
+            キャンセル
+          </Button>
+          <Button onClick={handleDeleteConfirm} color="error" variant="contained">
+            削除
+          </Button>
+        </DialogActions>
+      </Dialog>
     </div>
   );
 }
