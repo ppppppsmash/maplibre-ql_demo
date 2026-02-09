@@ -18,6 +18,7 @@ import { pointsToGeoJSON } from "../utils";
 // https://mui.com/material-ui/material-icons/
 import AddCircleIcon from "@mui/icons-material/AddCircle";
 import DeleteSweepIcon from "@mui/icons-material/DeleteSweep";
+import FileDownloadIcon from "@mui/icons-material/FileDownload";
 import MenuIcon from "@mui/icons-material/Menu";
 import "./MapView.css";
 
@@ -72,7 +73,11 @@ export function MapView() {
 
     const handler = (e) => {
       const { lng, lat } = e.lngLat;
-      setPoints((prev) => [...prev, [lng, lat]]);
+      setPoints((prev) => {
+        const next = [...prev, [lng, lat]];
+        console.log("geojson: ", pointsToGeoJSON(next));
+        return next;
+      });
     };
 
     map.on("click", handler);
@@ -118,13 +123,29 @@ export function MapView() {
 
   const handleDeleteConfirm = useCallback(() => {
     if (deleteConfirmIndex === null) return;
-    setPoints((prev) => prev.filter((_, i) => i !== deleteConfirmIndex));
+    setPoints((prev) => {
+      const next = prev.filter((_, i) => i !== deleteConfirmIndex);
+      console.log("geojson:", pointsToGeoJSON(next));
+      return next;
+    });
     setDeleteConfirmIndex(null);
   }, [deleteConfirmIndex]);
 
   const handleDeleteCancel = useCallback(() => {
     setDeleteConfirmIndex(null);
   }, []);
+
+  const handleExportGeoJSON = useCallback(() => {
+    const geojson = pointsToGeoJSON(points);
+    const json = JSON.stringify(geojson, null, 2);
+    const dataUrl =
+      "data:application/geo+json;charset=utf-8," + encodeURIComponent(json);
+    const a = document.createElement("a");
+    a.href = dataUrl;
+    a.download = "map.geojson";
+    a.click();
+    closeMenu();
+  }, [points, closeMenu]);
 
   const mapCursor = addMode ? "crosshair" : deleteMode ? "pointer" : undefined;
 
@@ -189,16 +210,20 @@ export function MapView() {
               <ListItemText primary="モードを解除" />
             </MenuItem>
           )}
+          <MenuItem onClick={handleExportGeoJSON}>
+            <ListItemIcon>
+              <FileDownloadIcon />
+            </ListItemIcon>
+            <ListItemText primary="GeoJSONを出力" />
+          </MenuItem>
         </Menu>
       </Box>
 
       <Dialog
         open={deleteConfirmIndex !== null}
         onClose={handleDeleteCancel}
-        aria-labelledby="delete-dialog-title"
         aria-describedby="delete-dialog-description"
       >
-        <DialogTitle id="delete-dialog-title">ポイントの削除</DialogTitle>
         <DialogContent>
           <DialogContentText id="delete-dialog-description">
             このポイントを削除しますか？
